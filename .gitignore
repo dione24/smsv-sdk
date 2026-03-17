@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.*
+
+# Test coverage
+coverage/
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Package locks (each SDK manages its own)
+# Keep package-lock.json and composer.lock for reproducibility

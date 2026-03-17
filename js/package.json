@@ -1,0 +1,38 @@
+{
+  "name": "@sahelpay/smsv",
+  "version": "0.2.0",
+  "description": "Official SMSV SDK for Node.js and browser (WhatsApp messaging, campaigns, senders, contacts, templates).",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format cjs,esm",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "smsv",
+    "whatsapp",
+    "sdk",
+    "campaigns",
+    "templates"
+  ],
+  "author": "SahelPay",
+  "license": "MIT",
+  "dependencies": {
+    "cross-fetch": "^4.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.1",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}
