@@ -16,9 +16,9 @@ class MessagesAPI:
     def __init__(self, client: "SMSvClient"):
         self._client = client
 
-    def send_text(self, to: str, text: str, sender_id: Optional[str] = None) -> Dict[str, Any]:
+    def send_text(self, to: str, message: str, sender_id: Optional[str] = None) -> Dict[str, Any]:
         """Send a text message via POST /v1/text"""
-        payload: Dict[str, Any] = {"to": to, "text": text}
+        payload: Dict[str, Any] = {"to": to, "message": message}
         if sender_id:
             payload["senderId"] = sender_id
         return self._client._request("POST", "/v1/text", payload)
@@ -328,7 +328,10 @@ class SMSvClient:
                     status_code=response.status_code,
                 )
 
-            return response.json()
+            body = response.json()
+            if isinstance(body, dict) and "data" in body:
+                return body["data"]
+            return body
 
         except requests.exceptions.RequestException as e:
             raise SMSvError(f"Request failed: {str(e)}")

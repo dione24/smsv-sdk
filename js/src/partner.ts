@@ -239,7 +239,11 @@ export class SmsvPartnerClient {
         );
       }
 
-      return response.json();
+      const json = await response.json();
+      if (json && typeof json === "object" && "data" in json) {
+        return json.data;
+      }
+      return json;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof PartnerApiError) throw error;
@@ -474,7 +478,6 @@ export class SmsvPartnerClient {
    */
   verifyWebhook(payload: string, signature: string, secret: string): boolean {
     const expected =
-      "sha256=" +
       crypto.createHmac("sha256", secret).update(payload).digest("hex");
     try {
       return crypto.timingSafeEqual(

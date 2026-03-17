@@ -162,7 +162,7 @@ class SMSvPartnerClient:
         Returns:
             True if signature is valid
         """
-        expected = "sha256=" + hmac.new(
+        expected = hmac.new(
             secret.encode(), payload.encode(), hashlib.sha256
         ).hexdigest()
         return hmac.compare_digest(signature, expected)
@@ -212,7 +212,10 @@ class SMSvPartnerClient:
                     status_code=response.status_code,
                 )
 
-            return response.json()
+            body = response.json()
+            if isinstance(body, dict) and "data" in body:
+                return body["data"]
+            return body
 
         except requests.exceptions.RequestException as e:
             raise SMSvError(f"Request failed: {str(e)}")
