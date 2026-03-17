@@ -3,8 +3,16 @@
 Official Laravel 12 compatible SDK for SMSV (WhatsApp gateway). Provides typed helpers for Apps, Senders (Meta Cloud + Baileys), Contacts, Templates, Campaigns, Notifications, and webhook verification.
 
 ## Installation
+
+> Le package n'est pas encore publié sur Packagist. Installez depuis GitHub :
+
 ```bash
-composer require sahelpay/smsv-laravel
+git clone https://github.com/dione24/smsv-sdk.git
+
+# Dans votre composer.json, ajoutez :
+# "repositories": [{ "type": "path", "url": "/chemin/vers/smsv-sdk/php-laravel" }]
+
+composer require sahelpay/smsv-laravel @dev
 php artisan vendor:publish --provider="SahelPay\\Smsv\\SmsvServiceProvider" --tag=config
 ```
 

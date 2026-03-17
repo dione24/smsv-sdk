@@ -6,11 +6,44 @@ Official SDKs for the [SMSv](https://smsv.tech) WhatsApp Business Platform — s
 
 ## Packages
 
-| Package | Language | Install | Status |
-|---------|----------|---------|--------|
-| [`@sahelpay/smsv`](./js) | JavaScript / TypeScript | `npm install @sahelpay/smsv` | ✅ Ready |
-| [`smsv`](./python) | Python 3.8+ | `pip install smsv` | ✅ Ready |
-| [`sahelpay/smsv-laravel`](./php-laravel) | PHP 8.2+ / Laravel 12+ | `composer require sahelpay/smsv-laravel` | ✅ Ready |
+| Package | Language | Status |
+|---------|----------|--------|
+| [`@sahelpay/smsv`](./js) | JavaScript / TypeScript | ✅ Ready |
+| [`smsv`](./python) | Python 3.8+ | ✅ Ready |
+| [`sahelpay/smsv-laravel`](./php-laravel) | PHP 8.2+ / Laravel 12+ | ✅ Ready |
+
+> **Note**: Les SDKs ne sont pas encore publiés sur npm/PyPI/Packagist. Installez-les depuis ce repo GitHub (voir ci-dessous).
+
+## Installation
+
+```bash
+git clone https://github.com/dione24/smsv-sdk.git
+```
+
+### JavaScript / TypeScript
+
+```bash
+cd smsv-sdk/js
+npm install && npm run build
+
+# Puis dans votre projet :
+npm install /chemin/vers/smsv-sdk/js
+```
+
+### Python
+
+```bash
+pip install ./smsv-sdk/python
+```
+
+### PHP / Laravel
+
+```bash
+# Dans votre composer.json, ajoutez :
+# "repositories": [{ "type": "path", "url": "/chemin/vers/smsv-sdk/php-laravel" }]
+composer require sahelpay/smsv-laravel @dev
+php artisan vendor:publish --provider="SahelPay\\Smsv\\SmsvServiceProvider" --tag=config
+```
 
 ## Two Integration Modes
 

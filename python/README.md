@@ -4,8 +4,11 @@ Python integration guide for the SMSV public API.
 
 ## Installation
 
+> Le package n'est pas encore publié sur PyPI. Installez depuis GitHub :
+
 ```bash
-pip install smsv
+git clone https://github.com/dione24/smsv-sdk.git
+pip install ./smsv-sdk/python
 ```
 
 ## Quick Start

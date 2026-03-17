@@ -3,10 +3,16 @@
 Official SDK for Node.js and browser usage. Covers Apps, Senders (Meta Cloud + Baileys QR), Contacts, Templates, Campaigns, Messaging, and webhook verification.
 
 ## Install
+
+> Le package n'est pas encore publié sur npm. Installez depuis GitHub :
+
 ```bash
-npm install @sahelpay/smsv
-# or
-pnpm add @sahelpay/smsv
+git clone https://github.com/dione24/smsv-sdk.git
+cd smsv-sdk/js
+npm install && npm run build
+
+# Puis dans votre projet :
+npm install /chemin/vers/smsv-sdk/js
 ```
 
 ## Quickstart

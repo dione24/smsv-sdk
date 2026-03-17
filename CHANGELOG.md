@@ -99,11 +99,17 @@ $smsv->sendText(
 3. Review your sender configuration to leverage multi-sender capabilities
 4. Update your imports/dependencies:
    ```bash
+   # Cloner le repo SDK
+   git clone https://github.com/dione24/smsv-sdk.git
+
    # JavaScript
-   npm install @sahelpay/smsv@^0.2.0
-   
-   # PHP
-   composer require sahelpay/smsv-laravel:^0.2.0
+   cd smsv-sdk/js && npm install && npm run build
+
+   # Python
+   pip install ./smsv-sdk/python
+
+   # PHP (ajouter le repo path dans composer.json)
+   composer require sahelpay/smsv-laravel @dev
    ```
 
 ---
