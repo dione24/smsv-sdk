@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SMSv SDK — Playground</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      body {
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      label {
+        display: block;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
+      input,
+      textarea,
+      button {
+        width: 100%;
+        margin-top: 0.35rem;
+        padding: 0.5rem 0.65rem;
+        border-radius: 6px;
+        border: 1px solid #334155;
+        background: #1e293b;
+        color: #f8fafc;
+      }
+      button {
+        cursor: pointer;
+        background: #2563eb;
+        border-color: #2563eb;
+        font-weight: 600;
+      }
+      button:hover {
+        background: #1d4ed8;
+      }
+      pre {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #020617;
+        border-radius: 8px;
+        overflow: auto;
+        font-size: 0.8rem;
+      }
+      a {
+        color: #38bdf8;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SMSv API — mini playground</h1>
+    <p>
+      Page statique pour tester <code>fetch</code> contre votre API locale (<code>http://localhost:3001/api</code>) ou
+      production. Pour le SDK npm, utilisez les hooks <code>onRequest</code> / <code>onResponse</code> dans
+      <code>ClientConfig</code>.
+    </p>
+
+    <label>Base URL (sans slash final)</label>
+    <input id="base" value="http://localhost:3001/api" />
+
+    <label>Clé API (header X-API-Key)</label>
+    <input id="key" placeholder="sk_..." autocomplete="off" />
+
+    <label>Corps JSON (POST /v1/text)</label>
+    <textarea id="body" rows="6">{
+  "to": "+22370000000",
+  "message": "Test depuis le playground SMSv",
+  "channel": "whatsapp"
+}</textarea>
+
+    <label style="margin-top: 1.25rem">&nbsp;</label>
+    <button type="button" id="run">Envoyer</button>
+
+    <pre id="out">Réponse…</pre>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      $("run").onclick = async () => {
+        const base = $("base").value.replace(/\/$/, "");
+        const key = $("key").value.trim();
+        const out = $("out");
+        out.textContent = "Chargement…";
+        try {
+          const payload = JSON.parse($("body").value);
+          const res = await fetch(`${base}/v1/text`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(key ? { "X-API-Key": key } : {}),
+            },
+            body: JSON.stringify(payload),
+          });
+          const text = await res.text();
+          let pretty = text || "(empty)";
+          try {
+            pretty = JSON.stringify(JSON.parse(text), null, 2);
+          } catch {
+            /* raw body */
+          }
+          out.textContent = res.status + " " + res.statusText + "\n\n" + pretty;
+        } catch (e) {
+          out.textContent = String(e);
+        }
+      };
+    </script>
+  </body>
+</html>

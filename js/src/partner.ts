@@ -211,7 +211,7 @@ export class SmsvPartnerClient {
   private async request<T>(
     method: string,
     path: string,
-    body?: Record<string, unknown>
+    body?: object
   ): Promise<T> {
     const url = `${this.apiUrl}${this.basePath}${path}`;
     const controller = new AbortController();
@@ -490,7 +490,7 @@ export class SmsvPartnerClient {
   }
 
   /**
-   * Parse webhook payload with type safety
+   * Parse webhook payload (legacy cast). Prefer {@link parsePartnerWebhook} from the SDK root for structured validation.
    */
   parseWebhook(body: unknown): WebhookPayload {
     if (typeof body !== "object" || body === null) {

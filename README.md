@@ -11,6 +11,8 @@ Official SDKs for the [SMSv](https://smsv.tech) WhatsApp Business Platform — s
 | [`@sahelpay/smsv`](./js) | JavaScript / TypeScript | ✅ Ready |
 | [`smsv`](./python) | Python 3.8+ | ✅ Ready |
 | [`sahelpay/smsv-laravel`](./php-laravel) | PHP 8.2+ / Laravel 12+ | ✅ Ready |
+| [Go](./go/README.md) | Go | 📝 REST stub + README |
+| [Dart](./dart/README.md) | Dart / Flutter | 📝 REST stub + README |
 
 > **Note**: Les SDKs ne sont pas encore publiés sur npm/PyPI/Packagist. Installez-les depuis ce repo GitHub (voir ci-dessous).
 
@@ -28,7 +30,11 @@ npm install && npm run build
 
 # Puis dans votre projet :
 npm install /chemin/vers/smsv-sdk/js
+
+# CLI (après build) : SMSV_API_KEY=sp_live_xxx node dist/cli.js --help
 ```
+
+**Playground** : ouvrez [`playground/index.html`](./playground/index.html) dans le navigateur pour tester `POST /v1/text` (API locale ou prod). Le SDK JS expose aussi des hooks `onRequest` / `onResponse` / `onError` sur `ClientConfig` pour brancher OpenTelemetry ou vos logs.
 
 ### Python
 
@@ -160,7 +166,22 @@ $partner->sendDocument([
 All SDKs include helpers for verifying webhook signatures:
 
 ```typescript
-// JavaScript
+// JavaScript — Partner HMAC (raw body + hex digest)
+import {
+  parsePartnerWebhook,
+  verifyPartnerWebhookSignature,
+  parseSmsvAppWebhook,
+  verifySmsvAppWebhookSignature,
+} from "@sahelpay/smsv";
+
+const payload = parsePartnerWebhook(JSON.parse(rawBody));
+// const ok = verifyPartnerWebhookSignature(rawBody, signatureHeader, secret);
+
+// App developer webhooks (X-SMSV-Signature: t=<unix>,v1=<hex>)
+// const appEvt = parseSmsvAppWebhook(JSON.parse(rawBody));
+// const ok = verifySmsvAppWebhookSignature({ rawBody, signatureHeader, secret });
+
+// Legacy Partner client helper (same HMAC as verifyPartnerWebhookSignature)
 const isValid = client.verifyWebhook(body, signature, secret);
 ```
 

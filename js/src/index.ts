@@ -1,6 +1,19 @@
 import { HttpClient } from "./httpClient";
-import type { ClientConfig, MessagePayload, TemplateSendPayload, CampaignPayload } from "./types";
+import type {
+  BatchMessageInput,
+  BatchSendResult,
+  BatchStatusResult,
+  ClientConfig,
+  MessagePayload,
+  TemplateSendPayload,
+  CampaignPayload,
+  CreateFlowPayload,
+  UpdateFlowPayload,
+  InstallFlowStarterPackPayload,
+} from "./types";
 import crypto from "crypto";
+import { pollBatchStatusUntilTerminal } from "./batchPoll";
+import type { PollBatchOptions } from "./batchPoll";
 
 // Re-export Partner API client
 export {
@@ -27,6 +40,63 @@ export type {
   WebhookEvent,
   WebhookPayload,
 } from "./partner";
+
+export {
+  PARTNER_WEBHOOK_EVENTS,
+  SMSV_APP_WEBHOOK_TYPES,
+  isPartnerWebhookEnvelope,
+  isPartnerWebhookMessageReceivedCloud,
+  isPartnerWebhookMessageReceivedConnector,
+  parsePartnerWebhook,
+  parsePartnerWebhookLoose,
+  parseSmsvAppWebhook,
+  parseSmsvSignatureHeader,
+  verifyPartnerWebhookSecretHeader,
+  verifyPartnerWebhookSignature,
+  verifySmsvAppWebhookSignature,
+} from "./webhooks";
+
+export type {
+  PartnerWebhookEnvelope,
+  PartnerWebhookEventName,
+  PartnerWebhookMessageReceivedCloud,
+  PartnerWebhookMessageReceivedConnector,
+  PartnerWebhookParsed,
+  ParsedSmsvSignatureHeader,
+  SmsvAppWebhookEnvelope,
+  SmsvAppWebhookType,
+} from "./webhooks";
+
+export {
+  verifyAndParsePartnerWebhookHttp,
+  verifyAndParseSmsvAppWebhookHttp,
+} from "./webhookHttp";
+
+export type {
+  VerifyPartnerWebhookHttpResult,
+  VerifySmsvAppWebhookHttpResult,
+  WebhookRequestLike,
+} from "./webhookHttp";
+
+export { pollBatchStatusUntilTerminal } from "./batchPoll";
+export type { BatchProgressPayload, PollBatchOptions } from "./batchPoll";
+
+export {
+  normalizeContactPhone,
+  diffContactsByPhone,
+  buildImportPayload,
+  smsvContactsToCrmExport,
+} from "./contactSync";
+
+export type {
+  CrmContactInput,
+  SmsvContactLike,
+  ContactDiffResult,
+  ImportPlanRow,
+} from "./contactSync";
+
+export { withExponentialBackoff, LocalSendQueue } from "./messageQueue";
+export type { LocalSendQueueOptions, BackoffOptions } from "./messageQueue";
 
 export class SmsvClient {
   private http: HttpClient;
@@ -142,6 +212,43 @@ export class SmsvClient {
     return this.http.request("POST", `/apps/${appId}/contacts/${contactId}/consent`, { body: JSON.stringify(payload) });
   }
 
+  // Flows (JWT / bearer — requires `automations` module on the app)
+  listFlows(appId: string) {
+    return this.http.request("GET", `/apps/${appId}/flows`);
+  }
+  getFlowStats(appId: string) {
+    return this.http.request("GET", `/apps/${appId}/flows/stats`);
+  }
+  getFlow(appId: string, flowId: string) {
+    return this.http.request("GET", `/apps/${appId}/flows/${encodeURIComponent(flowId)}`);
+  }
+  createFlow(appId: string, payload: CreateFlowPayload) {
+    return this.http.request("POST", `/apps/${appId}/flows`, { body: JSON.stringify(payload) });
+  }
+  updateFlow(appId: string, flowId: string, payload: UpdateFlowPayload) {
+    return this.http.request("PUT", `/apps/${appId}/flows/${encodeURIComponent(flowId)}`, {
+      body: JSON.stringify(payload),
+    });
+  }
+  deleteFlow(appId: string, flowId: string) {
+    return this.http.request("DELETE", `/apps/${appId}/flows/${encodeURIComponent(flowId)}`);
+  }
+  activateFlow(appId: string, flowId: string) {
+    return this.http.request("POST", `/apps/${appId}/flows/${encodeURIComponent(flowId)}/activate`);
+  }
+  deactivateFlow(appId: string, flowId: string) {
+    return this.http.request("POST", `/apps/${appId}/flows/${encodeURIComponent(flowId)}/deactivate`);
+  }
+  duplicateFlow(appId: string, flowId: string) {
+    return this.http.request("POST", `/apps/${appId}/flows/${encodeURIComponent(flowId)}/duplicate`);
+  }
+  installFlowStarterPack(appId: string, payload: InstallFlowStarterPackPayload = {}) {
+    return this.http.request("POST", `/apps/${appId}/flows/starter-pack`, { body: JSON.stringify(payload) });
+  }
+  listFlowExecutions(appId: string, flowId: string, query: Record<string, unknown> = {}) {
+    return this.http.request("GET", `/apps/${appId}/flows/${encodeURIComponent(flowId)}/executions`, { query });
+  }
+
   // Messages
   listMessages(appId: string, query: Record<string, any> = {}) {
     return this.http.request("GET", `/messages`, { query: { appId, ...query } });
@@ -209,6 +316,39 @@ export class SmsvClient {
   }
   apiKeyCampaignRecipients(id: string, query: Record<string, any> = {}) {
     return this.http.request("GET", `/v1/campaigns/${id}/recipients`, { query });
+  }
+
+  /**
+   * Send up to 1000 messages in one request (`POST /v1/batch`).
+   */
+  sendBatch(messages: BatchMessageInput[]) {
+    return this.http.request("POST", "/v1/batch", {
+      body: JSON.stringify({ messages }),
+      headers: { "Idempotency-Key": this.buildIdempotencyKey("batch") },
+    });
+  }
+
+  /** Poll batch delivery stats (`GET /v1/batch/:batchId`). */
+  getBatchStatus(batchId: string) {
+    return this.http.request("GET", `/v1/batch/${encodeURIComponent(batchId)}`);
+  }
+
+  /**
+   * Submit a batch and poll until messages leave the outbound queue (default), or custom `isTerminal`.
+   */
+  async sendBatchAndWait(
+    messages: BatchMessageInput[],
+    pollOptions?: PollBatchOptions,
+  ): Promise<{ submit: BatchSendResult; finalStatus: BatchStatusResult }> {
+    const submit = (await this.sendBatch(messages)) as BatchSendResult;
+    if (!submit?.batchId) {
+      throw new Error("Batch submit did not return batchId");
+    }
+    const finalStatus = await pollBatchStatusUntilTerminal(
+      () => this.getBatchStatus(submit.batchId) as Promise<BatchStatusResult>,
+      pollOptions,
+    );
+    return { submit, finalStatus };
   }
 
   // Messaging (API key)

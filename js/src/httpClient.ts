@@ -9,6 +9,9 @@ export class HttpClient {
   private retries: number;
   private retryBaseMs: number;
   private fetcher: typeof fetch;
+  private onRequest?: ClientConfig["onRequest"];
+  private onResponse?: ClientConfig["onResponse"];
+  private onError?: ClientConfig["onError"];
 
   constructor(config: ClientConfig = {}) {
     this.baseUrl = (config.baseUrl ?? "http://localhost:3001/api").replace(/\/$/, "");
@@ -18,6 +21,9 @@ export class HttpClient {
     this.retries = config.retries ?? 3;
     this.retryBaseMs = config.retryBaseMs ?? 200;
     this.fetcher = config.fetcher ?? fetchDefault;
+    this.onRequest = config.onRequest;
+    this.onResponse = config.onResponse;
+    this.onError = config.onError;
   }
 
   async request(method: string, path: string, options: RequestInit & { query?: Record<string, any> } = {}) {
@@ -30,6 +36,10 @@ export class HttpClient {
       }
     }
 
+    let logicalPath = "/" + path.replace(/^\/+/, "");
+    const q = url.searchParams.toString();
+    if (q) logicalPath += `?${q}`;
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(options.headers as Record<string, string> | undefined),
@@ -41,6 +51,8 @@ export class HttpClient {
     let attempts = 0;
     while (true) {
       try {
+        this.onRequest?.({ method, path: logicalPath });
+        const t0 = Date.now();
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
         const res = await this.fetcher(url.toString(), {
@@ -54,8 +66,10 @@ export class HttpClient {
         const rateLimit = this.parseRateLimit(res);
         const text = await res.text();
         const data = text ? JSON.parse(text) : undefined;
+        const ms = Date.now() - t0;
 
         if (res.ok) {
+          this.onResponse?.({ method, path: logicalPath, status: res.status, ms });
           return data;
         }
 
@@ -65,6 +79,7 @@ export class HttpClient {
           continue;
         }
 
+        this.onResponse?.({ method, path: logicalPath, status: res.status, ms });
         const err: SmsvError = new Error(data?.message || data?.error || "SMSV API error");
         err.status = res.status;
         err.payload = data;
@@ -79,6 +94,7 @@ export class HttpClient {
           attempts++;
           continue;
         }
+        this.onError?.({ method, path: logicalPath, error: err });
         throw err;
       }
     }
